@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirmar Venta</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 420px;
+      margin: 40px auto;
+      padding: 24px;
+      background: #1a1a2e;
+      color: white;
+      border-radius: 12px;
+    }
+    h2 { text-align: center; color: #FFD700; margin-bottom: 20px; }
+    label { font-size: 13px; font-weight: bold; color: #ccc; display: block; margin-bottom: 4px; }
+    .opcional { color: #888; font-size: 11px; margin-left: 5px; }
+    input, select {
+      width: 100%;
+      padding: 11px;
+      margin-bottom: 13px;
+      border-radius: 8px;
+      border: none;
+      font-size: 15px;
+      background: #f5f5f5;
+      color: #111;
+    }
+    .test-box {
+      background: rgba(255, 165, 0, 0.1);
+      border: 1px dashed #FFA500;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+    }
+    .test-box input { margin-bottom: 0; background: #2a2a40; color: #ffd27f; }
+    .fila-dos {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .separador {
+      border: none;
+      border-top: 1px solid #333;
+      margin: 15px 0;
+    }
+    .seccion-titulo {
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #FFD700;
+      color: #1a1a2e;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 5px;
+      transition: background 0.2s;
+    }
+    button:hover { background: #FFC200; }
+    button:disabled { background: #555; color: #999; cursor: not-allowed; }
+    #mensaje {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 15px;
+      font-weight: bold;
+      line-height: 1.5;
+    }
+    .score-bar {
+      background: #333;
+      border-radius: 20px;
+      height: 10px;
+      margin: 8px 0 5px 0;
+      overflow: hidden;
+    }
+    .score-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ff5252, #ffcc00, #00e676);
+      border-radius: 20px;
+      transition: width 0.4s;
+    }
+    .score-label {
+      text-align: right;
+      font-size: 12px;
+      color: #aaa;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>🎰 Confirmar Venta</h2>
+
+  <!-- Opcional: solo para depuración -->
+  <div class="test-box">
+    <label style="color: #ffd27f;">🧪 Test Event Code <span class="opcional">opcional</span></label>
+    <input type="text" id="testEventCode" placeholder="Dejar vacío para ventas reales">
+  </div>
+
+  <div class="seccion-titulo">📊 Calidad del evento</div>
+  <div class="score-bar">
+    <div class="score-fill" id="scoreFill" style="width:0%"></div>
+  </div>
+  <div class="score-label" id="scoreLabel">Completá los campos</div>
+
+  <hr class="separador">
+
+  <div class="seccion-titulo">🔴 Obligatorios</div>
+  <label>💰 Monto en ARS:</label>
+  <input type="number" id="monto" placeholder="Ej: 5000" oninput="actualizarScore()">
+
+  <label>📱 Teléfono (sin +):</label>
+  <input type="text" id="telefono" placeholder="Ej: 5491112345678" oninput="actualizarScore()">
+
+  <hr class="separador">
+
+  <div class="seccion-titulo">🟡 Datos cliente</div>
+  <label>🔑 Código REF de WhatsApp</label>
+  <input type="text" id="ref" placeholder="Ej: REF-123456789" oninput="actualizarScore()">
+
+  <div class="fila-dos">
+    <div>
+      <label>👤 Nombre</label>
+      <input type="text" id="nombre" oninput="actualizarScore()">
+    </div>
+    <div>
+      <label>👤 Apellido</label>
+      <input type="text" id="apellido" oninput="actualizarScore()">
+    </div>
+  </div>
+
+  <label>⚧ Género</label>
+  <select id="genero" onchange="actualizarScore()">
+    <option value="">— No especificar —</option>
+    <option value="m">👨 Masculino</option>
+    <option value="f">👩 Femenino</option>
+  </select>
+
+  <button id="btnConfirmar" onclick="confirmarVenta()">✅ Confirmar Venta</button>
+
+  <div id="mensaje"></div>
+
+  <script>
+    const PIXEL_ID     = '1787042329000688';
+    const ACCESS_TOKEN = 'EAAhDppwxLZBsBStkVeSvv67ZBZAlt2kERHez73MY7UcViwk6Fz8uZARaZAig1yZABIHvpDqIFsoQMWJsUzalSFXehIVcRzir3tYmTUEUZBdobSHbZAdNShsHQJTlYEDGt6UoWZA3bv4BZBIBXcn9ZBjkwtRZAu61AuMYZBqJ1loJa94GhJEWSR1i1l4MBH9ROpc4MnHUXZCwZDZD';
+
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+      return null;
+    }
+
+    async function hashData(data) {
+      if (!data || data.trim() === '') return null;
+      const msgBuffer = new TextEncoder().encode(data.trim().toLowerCase());
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function actualizarScore() {
+      const campos = [
+        document.getElementById('monto').value,
+        document.getElementById('telefono').value,
+        document.getElementById('ref').value,
+        document.getElementById('nombre').value,
+        document.getElementById('apellido').value,
+        document.getElementById('genero').value,
+        'ar'
+      ];
+      const llenos = campos.filter(c => c && c.trim() !== '').length;
+      const porcentaje = Math.round((llenos / campos.length) * 100);
+      document.getElementById('scoreFill').style.width = porcentaje + '%';
+      let label = porcentaje <= 35 ? `⚠️ Score bajo (${porcentaje}%)` : porcentaje <= 65 ? `🟡 Score medio (${porcentaje}%)` : porcentaje <= 85 ? `🟢 Score bueno (${porcentaje}%)` : `🏆 Score excelente (${porcentaje}%)`;
+      document.getElementById('scoreLabel').textContent = label;
+    }
+
+    async function confirmarVenta() {
+      const monto = document.getElementById('monto').value;
+      const telefono = document.getElementById('telefono').value.trim();
+      const refCode = document.getElementById('ref').value.trim();
+      const nombre = document.getElementById('nombre').value.trim();
+      const apellido = document.getElementById('apellido').value.trim();
+      const genero = document.getElementById('genero').value;
+      const testCode = document.getElementById('testEventCode').value.trim();
+      const divMsg = document.getElementById('mensaje');
+      const btn = document.getElementById('btnConfirmar');
+
+      if (!monto || !telefono) {
+        divMsg.innerHTML = '⚠️ Monto y Teléfono son obligatorios';
+        divMsg.style.color = '#ffcc00';
+        return;
+      }
+
+      btn.disabled = true;
+      divMsg.innerHTML = '⏳ Enviando venta...';
+
+      const telefonoLimpio = telefono.replace(/\D/g, '');
+      const user_data = {
+        client_user_agent: navigator.userAgent,
+        fbp: getCookie('_fbp') || sessionStorage.getItem('casino_fbp') || '',
+        fbc: getCookie('_fbc') || sessionStorage.getItem('casino_fbc') || '',
+        country: ['ar']
+      };
+
+      if (refCode) user_data.external_id = [await hashData(refCode)];
+      if (telefonoLimpio) user_data.ph = [await hashData(telefonoLimpio)];
+      if (nombre) user_data.fn = [await hashData(nombre)];
+      if (apellido) user_data.ln = [await hashData(apellido)];
+      if (genero) user_data.ge = [await hashData(genero)];
+
+      const eventData = {
+        event_name: 'Purchase',
+        event_time: Math.floor(Date.now() / 1000),
+        event_id: 'purchase_' + Date.now(),
+        action_source: 'website',
+        event_source_url: 'https://goodlucky31.github.io/landing/',
+        custom_data: { value: parseFloat(monto), currency: 'ARS' },
+        user_data: user_data
+      };
+
+      if (testCode) eventData.test_event_code = testCode;
+
+      try {
+        const response = await fetch(`https://graph.facebook.com/v19.0/${PIXEL_ID}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: [eventData], access_token: ACCESS_TOKEN })
+        });
+        const data = await response.json();
+        if (data.events_received) {
+          divMsg.innerHTML = '✅ ¡Venta registrada con éxito!';
+          divMsg.style.color = '#00e676';
+          ['monto','telefono','ref','nombre','apellido'].forEach(id => document.getElementById(id).value = '');
+          document.getElementById('genero').value = '';
+          actualizarScore();
+        } else {
+          divMsg.innerHTML = '❌ Error: ' + (data.error?.message ?? 'Fallo en envío');
+          divMsg.style.color = '#ff5252';
+        }
+      } catch (e) {
+        divMsg.innerHTML = '❌ Error de red';
+      } finally {
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
